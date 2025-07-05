@@ -1,96 +1,87 @@
-# Stock Trading Using Q-Learning Reinforcement Learning Strategy
+# Q-Learning Based Stock Trading Strategy (with Optuna Hyperparameter Optimization)
 
-This repository implements a stock trading strategy using Q-Learning reinforcement learning, focusing on the NIFTYBEES ETF. The goal is to learn an optimal buy/sell/hold policy that maximizes portfolio returns over time without using deep learning frameworks.
+This project implements a **Q-Learning-based trading agent** that learns to trade the Indian stock market ETF — **NIFTYBEES** — using minimal features. It uses **tabular reinforcement learning**, and hyperparameters are tuned using **Optuna**, a powerful Bayesian optimization library.
 
-## Dataset
-- *Training Dataset*: Historical price data of NIFTYBEES from 2016 to 2020.
-- *Testing Dataset*: Price data from 2021 to 2025.
-- *Source*: Downloaded using the `yfinance` API from Yahoo Finance.
+---
 
-## Approach
-The approach combines classical reinforcement learning with simplified state-action design for real-time trading. The agent learns to take profitable actions through exploration and experience over historical market movements.
+## Problem Statement
 
-### 1. Feature Engineering:
-- *Moving Average (MA5)*: 5-day moving average used to define market trend.
-- *Trend Signal (`u`)*: Binary signal (1 if price > MA5, else 0) representing trend.
-- *State Representation*: Combination of trend signal and position holding status (cash or ETF).
+Can a simple reinforcement learning agent, with discrete state space and minimal market signal (5-day moving average), learn to make profitable trades in the Indian equity market?
 
-### 2. Q-Learning Framework:
-- *States*: 4 states representing all combinations of trend (u) and holding status (t).
-- *Actions*: 
-  - `0`: Buy
-  - `1`: Sell
-  - `2`: Hold
-- *Reward Function*: Based on profit/loss from each trade or hold decision.
-- *Episodes*: 100 per gamma setting.
-- *Q-Table*: 4x3 matrix updated using Bellman Equation.
+---
 
-### 3. Training Setup:
-- *Epsilon-Greedy Policy*:
-  - `epsilon_start`: 1.0 (exploration)
-  - `epsilon_decay`: 0.99
-  - `epsilon_min`: 0.15
-- *Learning Rate (alpha)*: 0.1
-- *Discount Factor (gamma)*: Swept from 0.01 to 1.0
-- *Portfolio Simulation*: ₹1,000,000 initial capital with full buy/sell actions.
+## Key Highlights
 
-### 4. Evaluation:
-- *Testing Phase*: Uses trained Q-table to simulate trades over 5 years of data.
-- *Performance Comparison*: Portfolio value is compared across different gamma settings.
-- *Visualizations*: Trends, actions, and returns are plotted for analysis.
+- **Reinforcement Learning** using Q-Learning (discrete agent)
+- **Trading Strategy**: Buy, Sell, Hold decisions on NIFTYBEES
+- **Feature**: Simple 5-day moving average-based momentum signal
+- **Hyperparameter Tuning**: Optuna optimization for `alpha` (learning rate) and `gamma` (discount factor)
+- **Backtested** on real stock data (2016–2025 split)
 
-## Evaluation Metrics:
-The performance of the trading agent was evaluated using:
-- *Final Portfolio Value* after 5 years of test trading.
-- *Total Return* from initial capital.
-- *Optimal Gamma*: Gamma value that gives the highest reward.
-- *Q-Table Convergence*: Monitored for stability across episodes.
+---
 
-## Results:
-The model achieved competitive results with the following:
-- *Best Gamma*: Produced the highest portfolio value through stable policy.
-- *Q-Table*: Learned consistent policies for all market conditions.
-- *Profitable Trading Strategy*: Even with simple trend features and discrete actions.
+## Algorithm Design
 
-## Challenges:
-- *Limited Feature Set*: Only short-term trend used; does not capture complex market patterns.
-- *No Transaction Costs*: Real-world slippage and fees are not included.
-- *Static State Space*: Fixed discrete states can be limiting in volatile markets.
+### State Space (`4` states total)
 
-## Inference:
-The final policy (Q-table) was used to evaluate trading decisions over unseen data from 2021 to 2025. The strategy executed trades consistently, adapting to market trends and maintaining profitability.
+Each state is a combination of:
 
-## Model Performance Comparison
+| Feature         | Values | Description                         |
+|----------------|--------|-------------------------------------|
+| Momentum `u`   | 0 or 1 | 1 if price > MA5                    |
+| Position `t`   | 0 or 1 | 1 if holding stock, else 0          |
+| Final state ID | 0–3    | Computed as `u * 2 + t`             |
 
-Below is a comparison of the portfolio value for different gamma values:
+---
 
-| *Gamma* | *Final Portfolio Value (₹)* |
-|--------:|-----------------------------:|
-| 0.01    | 1,080,000                    |
-| 0.50    | 1,135,000                    |
-| 0.77    | **1,180,000 (Best)**         |
-| 1.00    | 1,120,000                    |
+### Action Space
 
-> *Note*: Values are illustrative. Actual output may vary based on randomness and data split.
+| Action | Description          |
+|--------|----------------------|
+| 0      | Buy (All-in)         |
+| 1      | Sell (All-out)       |
+| 2      | Hold (Do nothing)    |
 
-## Conclusion:
-This Q-Learning stock trading strategy illustrates that even with minimal market knowledge and simple features, reinforcement learning can learn profitable trading policies. It serves as a stepping stone toward more advanced RL-based financial strategies.
+---
 
-## Requirements:
-- Python 3.x
-- NumPy
-- Pandas
-- Matplotlib
-- tqdm
-- yfinance
+## Reward Function
 
-## Usage:
+The reward at each step is defined as the **total portfolio value (cash + stock)**, encouraging long-term wealth accumulation.
+
+---
+
+## Data Preparation
+
+| Dataset   | Source     | Range            |
+|-----------|------------|------------------|
+| Train     | NIFTYBEES  | 2016–2020        |
+| Test      | NIFTYBEES  | 2021–2025        |
+
+Data is pulled using the `yfinance` API and cleaned to compute:
+
+- **5-day moving average**
+- **Binary momentum signal (`u`)**
+
+---
+
+## Hyperparameter Optimization
+
+### Optimized Parameters:
+
+| Parameter | Range        | Description              |
+|-----------|--------------|--------------------------|
+| `alpha`   | 0.01 – 0.99  | Learning rate            |
+| `gamma`   | 0.01 – 0.99  | Discount factor          |
+
+We use `Optuna` to **maximize** final portfolio value over test set.
+
+---
+
+## ⚙️ How to Run
+
+### Requirements
+
+Install dependencies:
+
 ```bash
-# Clone the repository
-git clone https://github.com/your-repo/qlearning-stock-trading.git
-
-# Install dependencies
 pip install -r requirements.txt
-
-# Run training and testing script
-python train_and_test.py
